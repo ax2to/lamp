@@ -1,12 +1,18 @@
 #! /bin/bash
+sudo apt-get update && sudo apt-get upgrade -y
+
 echo "install tools";
 sudo apt-get install zip -y
 sudo apt-get install curl -y
 
 echo "install apache2";
+sudo add-apt-repository ppa:ondrej/apache2 -y
+sudo apt-get update
 sudo apt-get install apache2 -y
 
 echo "install php7"
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt-get update
 sudo apt-get install php -y
 
 echo "install mysql"
@@ -31,3 +37,5 @@ sudo a2enmod rewrite
 
 echo "restar apache"
 sudo service apache2 restart
+
+
