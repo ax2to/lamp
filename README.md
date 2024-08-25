@@ -1,7 +1,3 @@
-Here is a simple README in English for the script:
-
----
-
 # Ubuntu 24.04 Server Setup Script for Laravel 11
 
 This script automates the installation and configuration of essential packages required to set up a web server for running a Laravel 11 project on Ubuntu 24.04. The script installs Apache, PHP 8.2, MySQL, and all the necessary PHP extensions. It also sets up Composer, the dependency manager for PHP, which is essential for Laravel.
