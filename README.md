@@ -42,7 +42,7 @@ The script performs the following steps:
     - Sets up MySQL for database management.
 
 6. **Installs required PHP extensions:**
-    - Includes all the necessary extensions for Laravel 11, such as `BCMath`, `Ctype`, `Fileinfo`, `JSON`, `Mbstring`, `OpenSSL`, `PDO`, `Tokenizer`, `XML`, `MySQL`, `Curl`, and `Zip`.
+    - Laravel 11 requires several PHP extensions. Many of them (including `Ctype`, `Fileinfo`, `JSON`, `OpenSSL`, `PDO`, and `Tokenizer`) are bundled with PHP 8.2 and do not need separate packages. The script installs the remaining modules: `BCMath`, `Mbstring`, `XML`, `MySQL`, `Curl`, and `Zip`.
 
 7. **Enables Apache and PHP modules:**
     - Enables `mod_rewrite` for Apache, which is required for Laravel routing.
