@@ -29,5 +29,5 @@ echo "apache mods"
 sudo apt-get install libapache2-mod-php -y
 sudo a2enmod rewrite
 
-echo "restar apache"
+echo "restart apache"
 sudo service apache2 restart

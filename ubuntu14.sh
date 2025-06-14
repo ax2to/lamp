@@ -20,7 +20,7 @@ sudo php5enmod mcrypt
 echo "apache mods"
 sudo a2enmod rewrite
 
-echo "restar apache"
+echo "restart apache"
 sudo service apache2 restart
 
 
