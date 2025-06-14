@@ -15,7 +15,19 @@ echo "Installing MySQL Server";
 sudo apt-get install -y mysql-server
 
 echo "Installing PHP extensions required for Laravel 11";
-sudo apt-get install -y php-bcmath php-ctype php-fileinfo php-json php-mbstring php-openssl php-pdo php-tokenizer php-xml php-mysql php-curl php-zip php-apcu php-imagick
+# PHP 8.2 ships several extensions (such as ctype, fileinfo, JSON, openssl,
+# PDO and tokenizer) as part of the core package. Installing them via
+# `apt-get` would fail because there are no separate packages. Only modules
+# that are distributed as packages need to be installed explicitly.
+sudo apt-get install -y \
+    php-bcmath \
+    php-mbstring \
+    php-xml \
+    php-mysql \
+    php-curl \
+    php-zip \
+    php-apcu \
+    php-imagick
 
 echo "Enabling Apache2 and PHP modules";
 sudo apt-get install -y libapache2-mod-php
