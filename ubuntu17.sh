@@ -1,33 +1,146 @@
-#! /bin/bash
-echo "install tools";
-sudo apt-get install zip -y
-sudo apt-get install curl -y
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "install apache2";
-sudo apt-get install apache2 -y
+info() { printf '[INFO] %s\n' "$*"; }
+warn() { printf '[WARN] %s\n' "$*" >&2; }
+fail() { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
-echo "install php7"
-sudo apt-get install php -y
+require_root() {
+  if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+    fail "Run as root: sudo ./ubuntu17.sh"
+  fi
+}
 
-echo "install mysql"
-sudo apt-get install mysql-server -y
+ensure_old_releases_mirror_if_needed() {
+  local version_id=""
+  local codename=""
 
-echo "php mods"
-sudo apt-get install php-mbstring -y
-sudo apt-get install php-json -y
-sudo apt-get install php-xml -y
-sudo apt-get install php-mysql -y
-sudo apt-get install php-curl -y
-sudo apt-get install php-apcu -y
-sudo apt-get install php-imagick -y
-sudo apt-get install php-mcrypt -y
-sudo apt-get install php-zip -y
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    version_id="${VERSION_ID:-}"
+    codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
+  fi
 
-sudo phpenmod mcrypt
+  if [[ -z "$codename" ]] && command -v lsb_release >/dev/null 2>&1; then
+    codename="$(lsb_release -sc || true)"
+  fi
 
-echo "apache mods"
-sudo apt-get install libapache2-mod-php -y
-sudo a2enmod rewrite
+  if [[ "$version_id" != "17.10" && "$codename" != "artful" ]]; then
+    return 0
+  fi
 
-echo "restart apache"
-sudo service apache2 restart
+  info "Ubuntu 17 detected; switching apt sources to old-releases.ubuntu.com"
+
+  cat > /etc/apt/sources.list <<'SRC'
+deb http://old-releases.ubuntu.com/ubuntu/ artful main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ artful-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ artful-security main restricted universe multiverse
+SRC
+}
+
+refresh_apt_indexes() {
+  info "Refreshing apt package indexes"
+  if ! apt-get update -y; then
+    fail "apt-get update failed. Check connectivity and apt sources."
+  fi
+}
+
+install_optional_package() {
+  local pkg="$1"
+  if apt-cache show "$pkg" >/dev/null 2>&1; then
+    info "Installing optional package: $pkg"
+    apt-get install -y "$pkg"
+  else
+    warn "Optional package not available: $pkg"
+  fi
+}
+
+install_required_package() {
+  local pkg="$1"
+  if apt-cache show "$pkg" >/dev/null 2>&1; then
+    apt-get install -y "$pkg"
+  else
+    fail "Required package is unavailable: $pkg"
+  fi
+}
+
+install_database_server() {
+  info "Installing database server (mysql-server preferred)"
+  if apt-cache show mysql-server >/dev/null 2>&1; then
+    apt-get install -y mysql-server
+    info "Database engine installed: mysql-server"
+    return 0
+  fi
+
+  warn "mysql-server package unavailable, falling back to mariadb-server"
+  if apt-cache show mariadb-server >/dev/null 2>&1; then
+    apt-get install -y mariadb-server
+    info "Database engine installed: mariadb-server"
+    return 0
+  fi
+
+  fail "Neither mysql-server nor mariadb-server is available"
+}
+
+enable_php_module_if_present() {
+  local module="$1"
+  if command -v phpenmod >/dev/null 2>&1; then
+    if phpenmod "$module"; then
+      info "Enabled PHP module: $module"
+    else
+      warn "Unable to enable PHP module: $module"
+    fi
+  else
+    warn "phpenmod not found; skipping module enable for $module"
+  fi
+}
+
+main() {
+  require_root
+  ensure_old_releases_mirror_if_needed
+  refresh_apt_indexes
+
+  info "Installing base tools"
+  apt-get install -y zip curl unzip
+
+  info "Installing Apache"
+  apt-get install -y apache2
+
+  info "Installing PHP 7 package family"
+  install_required_package php7.1
+  install_required_package php7.1-cli
+
+  info "Installing PHP 7 extensions"
+  install_required_package php7.1-mbstring
+  install_required_package php7.1-xml
+  install_required_package php7.1-mysql
+  install_required_package php7.1-curl
+  install_optional_package php7.1-zip
+  install_optional_package php7.1-apcu
+  install_optional_package php7.1-imagick
+  install_optional_package php7.1-mcrypt
+
+  enable_php_module_if_present mcrypt
+
+  info "Installing Apache PHP module"
+  if apt-cache show libapache2-mod-php7.1 >/dev/null 2>&1; then
+    apt-get install -y libapache2-mod-php7.1
+  else
+    install_optional_package libapache2-mod-php
+  fi
+
+  info "Enabling Apache rewrite module"
+  a2enmod rewrite
+
+  install_database_server
+
+  info "Composer is skipped on Ubuntu 17 by default due to compatibility constraints"
+
+  info "Restarting Apache"
+  service apache2 restart
+
+  info "Ubuntu 17 LAMP setup finished"
+}
+
+main "$@"

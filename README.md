@@ -1,68 +1,44 @@
-# Ubuntu 24.04 Server Setup Script for Laravel 11
+# Multi-Version Ubuntu LAMP Setup Scripts
 
-This script automates the installation and configuration of essential packages required to set up a web server for running a Laravel 11 project on Ubuntu 24.04. The script installs Apache, PHP 8.2, MySQL, and all the necessary PHP extensions. It also sets up Composer, the dependency manager for PHP, which is essential for Laravel.
+This repository provides separate setup scripts for Ubuntu 14.04, 16.04, 17.10, and 24.04. Each script installs Apache, PHP, database server packages, and common extensions for Laravel/PHP projects while keeping version-specific package behavior.
 
-## How to Use the Script
+## Supported Scripts
 
-1. Clone or download this repository to your Ubuntu 24.04 server.
+| Script | Target Ubuntu | PHP Policy | Database Policy | EOL Mirror Handling |
+| --- | --- | --- | --- | --- |
+| `ubuntu14.sh` | 14.04 (Trusty) | PHP 5 family (`php5`, `php5-*`) | `mysql-server` then `mariadb-server` fallback | Rewrites to `old-releases.ubuntu.com` |
+| `ubuntu16.sh` | 16.04 (Xenial) | Distro-default PHP packages (`php`, `php-*`) | `mysql-server` then `mariadb-server` fallback | Rewrites to `old-releases.ubuntu.com` |
+| `ubuntu16-PHP7.sh` | 16.04 (Xenial) | Explicit PHP 7.0 packages (`php7.0-*`) | `mysql-server` then `mariadb-server` fallback | Rewrites to `old-releases.ubuntu.com` |
+| `ubuntu17.sh` | 17.10 (Artful) | Explicit PHP 7.1 packages (`php7.1-*`) | `mysql-server` then `mariadb-server` fallback | Rewrites to `old-releases.ubuntu.com` |
+| `ubuntu24.sh` | 24.04 (Noble) | Modern repo-native PHP packages (`php`, `php-*`) | `mysql-server` then `mariadb-server` fallback | Not needed |
 
-2. Open a terminal and navigate to the directory containing the script.
+## Usage
 
-3. Make the script executable:
+1. Clone this repository on the target server.
+2. Make the script executable.
+3. Run the script as root.
 
-    ```bash
-    chmod +x ubuntu24.sh
-    ```
+Example:
 
-4. Run the script with superuser permissions:
+```bash
+chmod +x ubuntu24.sh
+sudo ./ubuntu24.sh
+```
 
-    ```bash
-    sudo ./ubuntu24.sh
-    ```
+## Behavior Notes
 
-5. The script will automatically install and configure the server for Laravel 11.
+- All scripts require root and will fail fast on errors (`set -euo pipefail`).
+- Legacy scripts (14/16/17) are best-effort because packages are served from archived repositories and may disappear or change metadata.
+- For legacy scripts, Composer installation is intentionally skipped by default to avoid compatibility failures with old PHP runtimes.
+- `mysql-server` is attempted first; scripts automatically fall back to `mariadb-server` when needed.
+- Optional PHP extensions (for example, APCu/Imagick/mcrypt depending on release) are installed only when available.
 
-## Script Contents
+## Ubuntu 24 Composer Security
 
-The script performs the following steps:
+`ubuntu24.sh` installs Composer with SHA-384 signature verification instead of piping the installer directly to PHP.
 
-1. **Updates package lists:**
-    - Ensures that all packages are up to date.
+## Caveats
 
-2. **Installs essential tools:**
-    - `zip`, `curl`, and `unzip`, which are commonly needed in Laravel projects.
-
-3. **Installs Apache2:**
-    - Sets up the Apache web server.
-
-4. **Installs PHP 8.2 and PHP CLI:**
-    - PHP 8.2 is the default version on Ubuntu 24.04 and is fully compatible with Laravel 11.
-
-5. **Installs MySQL Server:**
-    - Sets up MySQL for database management.
-
-6. **Installs required PHP extensions:**
-    - Laravel 11 requires several PHP extensions. Many of them (including `Ctype`, `Fileinfo`, `JSON`, `OpenSSL`, `PDO`, and `Tokenizer`) are bundled with PHP 8.2 and do not need separate packages. The script installs the remaining modules: `BCMath`, `Mbstring`, `XML`, `MySQL`, `Curl`, and `Zip`.
-
-7. **Enables Apache and PHP modules:**
-    - Enables `mod_rewrite` for Apache, which is required for Laravel routing.
-
-8. **Installs Composer:**
-    - Downloads and installs Composer, the PHP dependency manager required by Laravel.
-
-9. **Restarts Apache2:**
-    - Restarts Apache to apply all the changes.
-
-## Optional Packages
-
-The script also installs the following optional PHP extensions:
-
-- **`php-apcu`**: Useful for caching if you plan to use APCu.
-- **`php-imagick`**: Required if your Laravel project handles image processing.
-
-If you don't need these extensions, you can remove them from the script.
-
-## Notes
-
-- Ensure that your server is connected to the internet to allow the installation of packages.
-- After running the script, your server will be ready to deploy and run Laravel 11 projects.
+- Archived Ubuntu releases can have intermittent mirror/package issues.
+- Package names differ by release; each script uses version-specific package lists to reduce breakage.
+- If Apache is not managed by `systemctl` on a legacy host, use `service apache2 restart` manually after script completion.
